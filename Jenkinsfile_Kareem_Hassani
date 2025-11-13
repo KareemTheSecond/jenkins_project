@@ -1,33 +1,34 @@
-pipeline
-{
+pipeline {
     agent any
-    environment
-    {
+
+    environment {
         VIRTUAL_ENV = 'venv'
-        PYTHON_EXE =  r"C:\Users\karee\AppData\Local\Programs\Python\Python312\python.exe"
+        PYTHON_EXE =  "C:\Users\karee\AppData\Local\Programs\Python\Python312\python.exe"
+        
     }
-    stages
-    {
-        stage('Setup')
-        {
+
+    stages {
+
+        stage('Setup') {
             steps {
                 script {
-                    // create venv once if it doesn't exist
-                    if (!fileExists("${env.WORKSPACE}/${VIRTUAL_ENV}"))
-                    {
-                        bat "python -m venv %VIRTUAL_ENV%"
+                    // Create virtual env once
+                    if (!fileExists("${env.WORKSPACE}/${VIRTUAL_ENV}")) {
+                        bat """
+                        "%PYTHON_EXE%" -m venv %VIRTUAL_ENV%
+                        """
                     }
-                    // activate venv and install deps
+
+                    // Install all deps from requirements.txt
                     bat """
                     call %VIRTUAL_ENV%\\Scripts\\activate.bat
-                    pip install -r requirements.txt
+                    "%PYTHON_EXE%" -m pip install -r requirements.txt
                     """
                 }
             }
         }
 
-        stage('Lint')
-        {
+        stage('Lint') {
             steps {
                 script {
                     bat """
@@ -49,19 +50,48 @@ pipeline
             }
         }
 
-        stage('Deploy')
-        {
+        // --- NEW: Coverage stage ---
+        stage('Coverage') {
             steps {
                 script {
-                    // Deployment logic, e.g., pushing to a remote server
-                    echo "Deploying application..."
+                    bat """
+                    call %VIRTUAL_ENV%\\Scripts\\activate.bat
+                    coverage run -m pytest
+                    coverage report -m
+                    """
+                }
+            }
+        }
+
+        // --- NEW: Security Scan stage ---
+        stage('Security Scan') {
+            steps {
+                script {
+                    bat """
+                    call %VIRTUAL_ENV%\\Scripts\\activate.bat
+                    bandit -r .
+                    """
+                }
+            }
+        }
+
+        // --- UPDATED: simple local Deploy stage ---
+        stage('Deploy') {
+            steps {
+                script {
+                    bat """
+                    if not exist deploy mkdir deploy
+                    copy app.py deploy\\app.py /Y
+                    copy requirements.txt deploy\\requirements.txt /Y
+                    echo Application deployed to %cd%\\deploy
+                    """
                 }
             }
         }
     }
+
     post {
-        always
-        {
+        always {
             cleanWs()
         }
     }
