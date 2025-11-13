@@ -4,6 +4,7 @@ pipeline
     environment
     {
         VIRTUAL_ENV = 'venv'
+        PYTHON_EXE =  'C:\Users\karee\AppData\Local\Programs\Python\Python312\python.exe'
     }
     stages
     {
