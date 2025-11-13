@@ -11,11 +11,16 @@ pipeline
         {
             steps {
                 script {
+                    // create venv once if it doesn't exist
                     if (!fileExists("${env.WORKSPACE}/${VIRTUAL_ENV}"))
                     {
-                        sh "python -m venv ${VIRTUAL_ENV}"
+                        bat "python -m venv %VIRTUAL_ENV%"
                     }
-                    sh "source ${VIRTUAL_ENV}/bin/activate && pip install -r requirements.txt"
+                    // activate venv and install deps
+                    bat """
+                    call %VIRTUAL_ENV%\\Scripts\\activate.bat
+                    pip install -r requirements.txt
+                    """
                 }
             }
         }
@@ -24,7 +29,10 @@ pipeline
         {
             steps {
                 script {
-                    sh "source ${VIRTUAL_ENV}/bin/activate && flake8 app.py"
+                    bat """
+                    call %VIRTUAL_ENV%\\Scripts\\activate.bat
+                    flake8 app.py
+                    """
                 }
             }
         }
@@ -32,7 +40,10 @@ pipeline
         stage('Test') {
             steps {
                 script {
-                    sh "source ${VIRTUAL_ENV}/bin/activate && pytest"
+                    bat """
+                    call %VIRTUAL_ENV%\\Scripts\\activate.bat
+                    pytest
+                    """
                 }
             }
         }
